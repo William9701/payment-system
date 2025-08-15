@@ -7,7 +7,18 @@ import { SqsProducerService } from './sqs-producer.service';
 import { PaymentEventType, PaymentEventData, PaymentEvent } from '../interfaces/payment-event.interface';
 import { PaymentGateway, Currency } from '../../payments/entities/payment.entity';
 
-jest.mock('aws-sdk');
+const mockSqsInstance = {
+  sendMessage: jest.fn().mockReturnValue({
+    promise: jest.fn().mockResolvedValue({
+      MessageId: 'msg-123456',
+      MD5OfBody: 'abc123',
+    }),
+  }),
+};
+
+jest.mock('aws-sdk', () => ({
+  SQS: jest.fn().mockImplementation(() => mockSqsInstance),
+}));
 
 describe('SqsProducerService', () => {
   let service: SqsProducerService;
@@ -43,7 +54,12 @@ describe('SqsProducerService', () => {
     };
 
     const mockConfigService = {
-      get: jest.fn(),
+      get: jest.fn().mockReturnValue({
+        region: 'us-east-1',
+        accessKeyId: 'test-access-key',
+        secretAccessKey: 'test-secret-key',
+        sqsQueueUrl: 'https://sqs.us-east-1.amazonaws.com/123456789/test-queue',
+      }),
     };
 
     const mockLogger = {

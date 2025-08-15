@@ -7,7 +7,28 @@ import { SqsConsumerService } from './sqs-consumer.service';
 import { PaymentEventType, PaymentEvent, PaymentEventData } from '../interfaces/payment-event.interface';
 import { PaymentGateway, Currency } from '../../payments/entities/payment.entity';
 
-jest.mock('aws-sdk');
+const mockSqsInstance = {
+  receiveMessage: jest.fn().mockReturnValue({
+    promise: jest.fn().mockResolvedValue({
+      Messages: [],
+    }),
+  }),
+  deleteMessage: jest.fn().mockReturnValue({
+    promise: jest.fn().mockResolvedValue({}),
+  }),
+  getQueueAttributes: jest.fn().mockReturnValue({
+    promise: jest.fn().mockResolvedValue({
+      Attributes: {
+        ApproximateNumberOfMessages: '0',
+        ApproximateNumberOfMessagesNotVisible: '0',
+      },
+    }),
+  }),
+};
+
+jest.mock('aws-sdk', () => ({
+  SQS: jest.fn().mockImplementation(() => mockSqsInstance),
+}));
 
 describe('SqsConsumerService', () => {
   let service: SqsConsumerService;
@@ -61,7 +82,12 @@ describe('SqsConsumerService', () => {
     };
 
     const mockConfigService = {
-      get: jest.fn(),
+      get: jest.fn().mockReturnValue({
+        region: 'us-east-1',
+        accessKeyId: 'test-access-key',
+        secretAccessKey: 'test-secret-key',
+        sqsQueueUrl: 'https://sqs.us-east-1.amazonaws.com/123456789/test-queue',
+      }),
     };
 
     const mockLogger = {

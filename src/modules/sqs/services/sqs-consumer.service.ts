@@ -378,4 +378,30 @@ export class SqsConsumerService implements OnModuleInit, OnModuleDestroy {
       throw error;
     }
   }
+
+  private validateMessage(message: SQS.Message): boolean {
+    try {
+      if (!message.Body) {
+        this.logger.error('Message has no body');
+        return false;
+      }
+
+      const paymentEvent: PaymentEvent = JSON.parse(message.Body);
+
+      if (!paymentEvent.eventId || !paymentEvent.eventType || !paymentEvent.data) {
+        this.logger.error('Message missing required fields');
+        return false;
+      }
+
+      if (!paymentEvent.data.paymentId || !paymentEvent.data.reference || !paymentEvent.data.merchantId) {
+        this.logger.error('Message data missing required fields');
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      this.logger.error(`Failed to parse message: ${error.message}`);
+      return false;
+    }
+  }
 }
