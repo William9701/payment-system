@@ -25,6 +25,7 @@ lerna-debug.log*
 .classpath
 .c9/
 *.launch
+.claude/
 .settings/
 *.sublime-workspace
 

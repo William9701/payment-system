@@ -37,7 +37,7 @@ describe('WebhookService', () => {
     paymentMethods: [],
   } as Merchant;
 
-  const mockPaymentMethod: PaymentMethod = {
+  const mockPaymentMethod = {
     id: '660e8400-e29b-41d4-a716-446655440000',
     name: 'Test Stripe Payment Method',
     type: PaymentMethodType.STRIPE,
@@ -53,9 +53,14 @@ describe('WebhookService', () => {
     createdBy: 'system',
     updatedBy: 'system',
     payments: [],
-  } as PaymentMethod;
+    setSecureData: jest.fn(),
+    getSecureData: jest.fn(),
+    webhookSecret: 'test_webhook_secret',
+    gateway: PaymentGateway.STRIPE,
+    isActive: true,
+  } as PaymentMethod & { webhookSecret: string; gateway: PaymentGateway; isActive: boolean };
 
-  const mockPayment: Payment = {
+  const mockPayment = {
     id: '770e8400-e29b-41d4-a716-446655440000',
     reference: 'PAY_12345678',
     amount: 100.50,
@@ -78,6 +83,14 @@ describe('WebhookService', () => {
     updatedAt: new Date(),
     createdBy: 'system',
     updatedBy: 'system',
+    webhookAttempts: 0,
+    webhookDelivered: false,
+    generateReference: jest.fn(),
+    isSuccessful: jest.fn(),
+    isFailed: jest.fn(),
+    isPending: jest.fn(),
+    canBeRefunded: jest.fn(),
+    calculateNetAmount: jest.fn(),
   } as Payment;
 
   beforeEach(async () => {
@@ -145,7 +158,7 @@ describe('WebhookService', () => {
       const result = await service.processWebhook(webhookDto);
 
       expect(paymentMethodRepository.findOne).toHaveBeenCalledWith({
-        where: { gateway: PaymentGateway.STRIPE, isActive: true },
+        where: { type: PaymentGateway.STRIPE, status: PaymentMethodStatus.ACTIVE },
       });
       expect(service['verifyWebhookSignature']).toHaveBeenCalledWith(
         webhookDto.payload,
@@ -155,7 +168,7 @@ describe('WebhookService', () => {
       );
       expect(paymentService.updatePaymentStatus).toHaveBeenCalledWith('PAY_12345678', {
         status: PaymentStatus.COMPLETED,
-        externalId: 'pi_1234567890',
+        gatewayReference: 'pi_1234567890',
       });
       expect(result.success).toBe(true);
       expect(result.message).toBe('Webhook processed successfully');
@@ -166,7 +179,7 @@ describe('WebhookService', () => {
 
       await expect(service.processWebhook(webhookDto)).rejects.toThrow(NotFoundException);
       expect(paymentMethodRepository.findOne).toHaveBeenCalledWith({
-        where: { gateway: PaymentGateway.STRIPE, isActive: true },
+        where: { type: PaymentGateway.STRIPE, status: PaymentMethodStatus.ACTIVE },
       });
     });
 
@@ -215,11 +228,11 @@ describe('WebhookService', () => {
       const result = await service.processStripeWebhook(stripePayload, 'valid_signature');
 
       expect(paymentMethodRepository.findOne).toHaveBeenCalledWith({
-        where: { gateway: PaymentGateway.STRIPE, isActive: true },
+        where: { type: PaymentGateway.STRIPE, status: PaymentMethodStatus.ACTIVE },
       });
       expect(paymentService.updatePaymentStatus).toHaveBeenCalledWith('PAY_12345678', {
         status: PaymentStatus.COMPLETED,
-        externalId: 'pi_1234567890',
+        gatewayReference: 'pi_1234567890',
       });
       expect(result.success).toBe(true);
     });
@@ -244,7 +257,7 @@ describe('WebhookService', () => {
 
       expect(paymentService.updatePaymentStatus).toHaveBeenCalledWith('PAY_12345678', {
         status: PaymentStatus.FAILED,
-        externalId: 'pi_1234567890',
+        gatewayReference: 'pi_1234567890',
       });
       expect(result.success).toBe(true);
     });
@@ -278,10 +291,7 @@ describe('WebhookService', () => {
     };
 
     it('should process Paystack webhook successfully', async () => {
-      paymentMethodRepository.findOne.mockResolvedValue({
-        ...mockPaymentMethod,
-        gateway: PaymentGateway.PAYSTACK,
-      });
+      paymentMethodRepository.findOne.mockResolvedValue(mockPaymentMethod);
       jest.spyOn(service as any, 'verifyWebhookSignature').mockReturnValue(true);
       paymentService.updatePaymentStatus.mockResolvedValue(mockPayment);
 
@@ -289,7 +299,7 @@ describe('WebhookService', () => {
 
       expect(paymentService.updatePaymentStatus).toHaveBeenCalledWith('PAY_12345678', {
         status: PaymentStatus.COMPLETED,
-        externalId: 'trx_123456',
+        gatewayReference: 'trx_123456',
       });
       expect(result.success).toBe(true);
     });
@@ -304,10 +314,7 @@ describe('WebhookService', () => {
         },
       };
 
-      paymentMethodRepository.findOne.mockResolvedValue({
-        ...mockPaymentMethod,
-        gateway: PaymentGateway.PAYSTACK,
-      });
+      paymentMethodRepository.findOne.mockResolvedValue(mockPaymentMethod);
       jest.spyOn(service as any, 'verifyWebhookSignature').mockReturnValue(true);
       paymentService.updatePaymentStatus.mockResolvedValue({ ...mockPayment, status: PaymentStatus.FAILED });
 
@@ -315,7 +322,7 @@ describe('WebhookService', () => {
 
       expect(paymentService.updatePaymentStatus).toHaveBeenCalledWith('PAY_12345678', {
         status: PaymentStatus.FAILED,
-        externalId: 'trx_123456',
+        gatewayReference: 'trx_123456',
       });
       expect(result.success).toBe(true);
     });
