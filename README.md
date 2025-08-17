@@ -114,8 +114,8 @@ This project demonstrates senior backend engineering skills including:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/William9701/iRecharge.git
-cd iRecharge/payment-system
+git clone git@github.com:William9701/payment-system.git
+cd payment-system
 ```
 
 ### 2. Install Dependencies
@@ -262,7 +262,6 @@ docker-compose up -d
 Once the application is running, access the interactive API documentation:
 
 - **Development**: http://localhost:3000/api/docs
-- **Production**: https://api.irecharge.com/api/docs
 
 ### Authentication
 
@@ -499,7 +498,7 @@ NODE_ENV=development DEBUG=* npm run start:dev
 
 1. **Fork and Clone**:
 ```bash
-git fork https://github.com/William9701/iRecharge.git
+git fork https://github.com/William9701/payment-system.git
 git clone <your-fork-url>
 ```
 

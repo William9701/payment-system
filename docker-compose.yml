@@ -1,0 +1,173 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: irecharge-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: payment_system_dev
+      POSTGRES_USER: payment_user
+      POSTGRES_PASSWORD: your_secure_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - payment-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payment_user -d payment_system_dev"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis (for caching and session management)
+  redis:
+    image: redis:7-alpine
+    container_name: irecharge-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - payment-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Payment API Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: irecharge-payment-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      API_PREFIX: api/v1
+      
+      # Database Configuration
+      DATABASE_TYPE: postgres
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: payment_user
+      DATABASE_PASSWORD: your_secure_password
+      DATABASE_NAME: payment_system_dev
+      DATABASE_SYNC: false
+      DATABASE_LOGGING: true
+      
+      # JWT Configuration
+      JWT_SECRET: T4rV9mE2sN7aP1yJ8kL6qX3bW5gF0hZd
+      JWT_EXPIRES_IN: 1h
+      JWT_REFRESH_SECRET: Q7pK2tM9nB5wR4yE6xL1cV8fA3uZ0jHk
+      JWT_REFRESH_EXPIRES_IN: 7d
+      
+      # AWS Configuration (disabled for local development)
+      AWS_REGION: ""
+      AWS_ACCESS_KEY_ID: ""
+      AWS_SECRET_ACCESS_KEY: ""
+      AWS_SQS_QUEUE_URL: ""
+      
+      # Encryption Configuration
+      ENCRYPTION_KEY: c8R7Yz2L9tP4wQx6A1mZfVjK5nB3uEoH
+      BCRYPT_ROUNDS: 10
+      
+      # Webhook Configuration
+      WEBHOOK_SECRET: your_webhook_secret_for_signature_verification
+      
+      # API Rate Limiting
+      RATE_LIMIT_WINDOW_MS: 60000
+      RATE_LIMIT_MAX_REQUESTS: 100
+      
+      # Logging Configuration
+      LOG_LEVEL: info
+      LOG_FORMAT: combined
+      
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - payment-network
+    command: npm run start:dev
+
+  # Production build (optional)
+  app-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: irecharge-payment-api-prod
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      API_PREFIX: api/v1
+      
+      # Database Configuration
+      DATABASE_TYPE: postgres
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: payment_user
+      DATABASE_PASSWORD: your_secure_password
+      DATABASE_NAME: payment_system_dev
+      DATABASE_SYNC: false
+      DATABASE_LOGGING: false
+      
+      # JWT Configuration
+      JWT_SECRET: T4rV9mE2sN7aP1yJ8kL6qX3bW5gF0hZd
+      JWT_EXPIRES_IN: 1h
+      JWT_REFRESH_SECRET: Q7pK2tM9nB5wR4yE6xL1cV8fA3uZ0jHk
+      JWT_REFRESH_EXPIRES_IN: 7d
+      
+      # AWS Configuration (disabled for local development)
+      AWS_REGION: ""
+      AWS_ACCESS_KEY_ID: ""
+      AWS_SECRET_ACCESS_KEY: ""
+      AWS_SQS_QUEUE_URL: ""
+      
+      # Encryption Configuration
+      ENCRYPTION_KEY: c8R7Yz2L9tP4wQx6A1mZfVjK5nB3uEoH
+      BCRYPT_ROUNDS: 10
+      
+      # Webhook Configuration
+      WEBHOOK_SECRET: your_webhook_secret_for_signature_verification
+      
+      # API Rate Limiting
+      RATE_LIMIT_WINDOW_MS: 60000
+      RATE_LIMIT_MAX_REQUESTS: 100
+      
+      # Logging Configuration
+      LOG_LEVEL: error
+      LOG_FORMAT: json
+      
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - payment-network
+    profiles:
+      - production
+
+networks:
+  payment-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
