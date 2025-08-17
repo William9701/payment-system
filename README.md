@@ -106,82 +106,10 @@ This project demonstrates senior backend engineering skills including:
 - **AWS Account** with SQS access (optional for local development)
 - **Git** for version control
 
-## ⚡ Quick Start
 
-Get the payment system running in under 5 minutes with our automated setup scripts!
+## 🚀 Installation
 
-### 🖥️ Windows Users
 
-**Option 1: PowerShell (Recommended)**
-```powershell
-# Clone the repository
-git clone https://github.com/William9701/iRecharge.git
-cd iRecharge/payment-system
-
-# Install dependencies
-npm install
-
-# Run the automated setup script
-.\scripts\setup-database.ps1
-```
-
-**Option 2: Command Prompt**
-```cmd
-# Clone the repository
-git clone https://github.com/William9701/iRecharge.git
-cd iRecharge/payment-system
-
-# Install dependencies
-npm install
-
-# Run the setup script
-scripts\setup-database.bat
-```
-
-### 🐧 Linux/macOS Users
-
-```bash
-# Clone the repository
-git clone https://github.com/William9701/iRecharge.git
-cd iRecharge/payment-system
-
-# Install dependencies
-npm install
-
-# Make script executable and run setup
-chmod +x scripts/setup-database.sh
-./scripts/setup-database.sh
-```
-
-### 🚀 Start the Application
-
-After running the setup script:
-
-```bash
-# Start the development server
-npm run start:dev
-
-# The API will be available at:
-# http://localhost:3000
-# API Documentation: http://localhost:3000/api/docs
-```
-
-### 📋 What the Setup Script Does
-
-- ✅ Checks PostgreSQL installation and service
-- ✅ Creates database and user with proper permissions
-- ✅ Generates secure JWT and encryption keys
-- ✅ Creates `.env` file with all necessary configuration
-- ✅ Runs database migrations
-- ✅ Verifies the setup with connection testing
-
-Need help? Check the [scripts/README.md](scripts/README.md) for detailed troubleshooting.
-
----
-
-## 🚀 Manual Installation
-
-If you prefer manual setup or need custom configuration:
 
 ### 1. Clone the Repository
 
